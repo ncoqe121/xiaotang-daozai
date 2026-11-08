@@ -1,0 +1,20 @@
+name: Build Release
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal --target x86_64-pc-windows-msvc
+      - name: Build Release Binary
+        run: cargo build --locked --release --bin daozai --target x86_64-pc-windows-msvc
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: daozai-windows-x64
+          path: target/x86_64-pc-windows-msvc/release/daozai.exe

@@ -327,12 +327,21 @@ impl App {
                 if matches!(&a.source,AlertSource::External(_)){a.body="收到新通知 · 内容已隐藏".into();}
             }
         }
+        // 仅 HUD 瞬态状态（音量/大小写/电源等）超时自动消失。
+        // 重要通知（邮件/待办/微信等）常驻停留，直到用户点击「查看」或「关闭」。
         if self
             .notice
             .as_ref()
-            .is_some_and(|a| self.t - a.at > a.duration)
+            .is_some_and(|a| a.is_hud() && self.t - a.at > a.duration)
         {
             self.notice = None;
+        }
+        // 重要通知未被点击时，每 30 秒重复触发一次铃铛摆动提醒
+        if let Some(a) = &self.notice {
+            if !a.is_hud() && self.t - a.at > 30.0 && self.t >= self.notification_bell_until {
+                self.notification_bell_at = self.t;
+                self.notification_bell_until = self.t + 4.5;
+            }
         }
         if self.notice.is_none() {
             if let Some(mut a) = self.alerts.pop_front() {
@@ -446,8 +455,19 @@ impl App {
                 if notice_button(&nc,250.0,12.0,68.0,"喝一口","water-confirm"){self.notice=None;self.drink_water();}
             }else{
                 let label=if is_focus{"开始"}else if is_power{"知道了"}else{"查看"};
-                if notice_button(&nc,257.0,12.0,60.0,label,"notice-action"){
-                    self.notice=None;if is_power{return;}if is_focus{self.pomo.running=true;}else if a.page<6{
+                if !is_power && !is_focus {
+                    if notice_button(&nc,196.0,12.0,52.0,"关闭","notice-dismiss"){
+                        self.notice=None;
+                        self.notification_bell_until=0.0;
+                    }
+                }
+                let btn_x = if !is_power && !is_focus { 254.0 } else { 257.0 };
+                let btn_w = if !is_power && !is_focus { 58.0 } else { 60.0 };
+                if notice_button(&nc,btn_x,12.0,btn_w,label,"notice-action"){
+                    self.notice=None;
+                    self.notification_bell_until=0.0;
+                    if is_power{return;}
+                    if is_focus{self.pomo.running=true;}else if a.page<6{
                         self.show_page(a.page);
                         if a.page==4 {
                             let order=self.todos.display_order(&self.today);
