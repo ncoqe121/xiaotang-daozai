@@ -336,11 +336,11 @@ impl App {
         {
             self.notice = None;
         }
-        // 重要通知未被点击时，每 30 秒重复触发一次铃铛摆动提醒
+        // 重要通知未被点击时，每 5 秒自动重复触发一次铃铛摆动提醒
         if let Some(a) = &self.notice {
-            if !a.is_hud() && self.t - a.at > 30.0 && self.t >= self.notification_bell_until {
+            if !a.is_hud() && self.t - self.notification_bell_at >= 5.0 {
                 self.notification_bell_at = self.t;
-                self.notification_bell_until = self.t + 4.5;
+                self.notification_bell_until = self.t + 3.5;
             }
         }
         if self.notice.is_none() {
